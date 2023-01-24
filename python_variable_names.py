@@ -9,3 +9,7 @@ myvar2 = "John"
 '''2myvar = "John"
 my-var = "John"
 my var = "John"'''
+#Multi Words Variable Names
+myVariableName = "John"
+MyVariableName = "John"
+my_variable_name = "John"
