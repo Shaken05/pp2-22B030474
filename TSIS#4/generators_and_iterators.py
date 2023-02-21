@@ -43,6 +43,5 @@ for i in g:
 
 #5
 n = int(input())
-d =  (i for i in range(n, 0, -1))
-for i in d:
+for i in  range(n,0,-1):
     print(i)
