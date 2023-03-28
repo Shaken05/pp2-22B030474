@@ -57,3 +57,4 @@ while True:
     # Update the screen
     win.fill((255, 255, 255))
     pygame.display.update()
+pygame.quit()
