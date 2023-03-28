@@ -10,7 +10,7 @@ win_height = 300
 win = pygame.display.set_mode((win_width, win_height))
 
 # Load the music files
-music_files = ['music1.mp3', 'music2.mp3', 'music3.mp3']
+music_files = ['./music/music1.mp3', './music/music2.mp3', './music/music3.mp3']
 
 # Set the initial song index
 current_song_index = 0
