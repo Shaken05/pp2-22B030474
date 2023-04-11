@@ -1,176 +1,161 @@
-#1.Импортируем необходимые модули и устанавливаем размер игрового окна:
-import pygame, sys
 import random
 
+import pygame
+
 pygame.init()
+WIDTH, HEIGHT = 800, 800
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
 
-WINDOW_WIDTH = 600
-WINDOW_HEIGHT = 600
+SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
+clock = pygame.time.Clock()
+BLOCK_SIZE = 40
+pygame.display.set_caption('Snake v0')
 
-WINDOW = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption('Snake')
 
-#2.Создаем класс для змеи:
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+
+class Food:
+    def __init__(self, x, y):
+        self.location = Point(x, y)
+
+    @property
+    def x(self):
+        return self.location.x
+
+    @property
+    def y(self):
+        return self.location.y
+
+    def update(self):
+        pygame.draw.rect(
+            SCREEN,
+            YELLOW,
+            pygame.Rect(
+                self.location.x * BLOCK_SIZE,
+                self.location.y * BLOCK_SIZE,
+                BLOCK_SIZE,
+                BLOCK_SIZE,
+            )
+        )
+
+
 class Snake:
     def __init__(self):
-        self.length = 1
-        self.positions = [(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)]
-        self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
-        self.color = (17, 24, 47)
-        
-    def get_head_position(self):
-        return self.positions[0]
-        
-    def turn(self, point):
-        if self.length > 1 and (point[0]*-1, point[1]*-1) == self.direction:
-            return
-        else:
-            self.direction = point
-        
-    def move(self):
-        cur = self.get_head_position()
-        x, y = self.direction
-        new = ((cur[0] + (x*GRID_SIZE)) % WINDOW_WIDTH, (cur[1] + (y*GRID_SIZE)) % WINDOW_HEIGHT)
-        if new in self.positions[2:]:
-            self.reset()
-        else:
-            self.positions.insert(0, new)
-            if len(self.positions) > self.length:
-                self.positions.pop()
-        
-    def reset(self):
-        self.length = 1
-        self.positions = [(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)]
-        self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+        self.points = [
+            Point(WIDTH // BLOCK_SIZE // 2, HEIGHT // BLOCK_SIZE // 2),
+            Point(WIDTH // BLOCK_SIZE // 2 + 1, HEIGHT // BLOCK_SIZE // 2),
+        ]
 
-#3.Создаем класс для еды:
-class Food:
-    def __init__(self):
-        self.position = (0, 0)
-        self.color = (223, 163, 49)
-        self.randomize_position()
-        
-    def randomize_position(self):
-        self.position = (random.randint(0, GRID_WIDTH-1) * GRID_SIZE, random.randint(0, GRID_HEIGHT-1) * GRID_SIZE)
+    def update(self):
+        head = self.points[0]
 
-#4.Определяем константы для направлений и размера сетки:
-UP = (0, -1)
-DOWN = (0, 1)
-LEFT = (-1, 0)
-RIGHT = (1, 0)
+        pygame.draw.rect(
+            SCREEN,
+            RED,
+            pygame.Rect(
+                head.x * BLOCK_SIZE,
+                head.y * BLOCK_SIZE,
+                BLOCK_SIZE,
+                BLOCK_SIZE,
+            )
+        )
+        for body in self.points[1:]:
+            pygame.draw.rect(
+                SCREEN,
+                BLUE,
+                pygame.Rect(
+                    body.x * BLOCK_SIZE,
+                    body.y * BLOCK_SIZE,
+                    BLOCK_SIZE,
+                    BLOCK_SIZE,
+                )
+            )
 
-GRID_SIZE = 20
-GRID_WIDTH = WINDOW_WIDTH / GRID_SIZE
-GRID_HEIGHT = WINDOW_HEIGHT / GRID_SIZE
+    def move(self, dx, dy):
+        for idx in range(len(self.points) - 1, 0, -1):
+            self.points[idx].x = self.points[idx - 1].x
+            self.points[idx].y = self.points[idx - 1].y
 
-#5.Определяем функцию для рисования сетки:
-def draw_grid(surface):
-    for y in range(0, int(GRID_HEIGHT)):
-        for x in range(0, int(GRID_WIDTH)):
-            if (x + y) % 2 == 0:
-                r = pygame.Rect((x * GRID_SIZE, y * GRID_SIZE), (GRID_SIZE, GRID_SIZE))
-                pygame.draw.rect(surface, (93, 216, 228), r)
-            else:
-                rr = pygame.Rect((x * GRID_SIZE, y * GRID_SIZE), (GRID_SIZE, GRID_SIZE))
-                pygame.draw.rect(surface, (84, 194, 205), rr)
+        self.points[0].x += dx
+        self.points[0].y += dy
 
-#6.Определяем функцию для рисования змеи:
-def draw_snake(surface, snake):
-    for p in snake.positions:
-        r = pygame.Rect((p[0], p[1]), (GRID_SIZE, GRID_SIZE))
-        pygame.draw.rect(surface, snake.color, r)
-        r = pygame.Rect((p[0]+4, p[1]+4), (12, 12))
-        pygame.draw.rect(surface, (93, 216, 228), r)
+        head = self.points[0]
+        if head.x > WIDTH // BLOCK_SIZE:
+            head.x = 0
+        elif head.x < 0:
+            head.x = WIDTH // BLOCK_SIZE - 1
+        elif head.y > HEIGHT // BLOCK_SIZE:
+            head.y = 0
+        elif head.y < 0:
+            head.y = HEIGHT // BLOCK_SIZE - 1
 
-#7.Определяем функцию для рисования еды:
-def draw_food(surface, food):
-    r = pygame.Rect((food.position[0], food.position[1]), (GRID_SIZE, GRID_SIZE))
-    pygame.draw.rect(surface, food.color, r)
-    pygame.draw.rect(surface, (93, 216, 228), r, 1)
-
-#8.Определяем функцию для обновления игры:
-def update():
-    global snake, food, score, level, speed
-    snake.move()
-    if snake.get_head_position() == food.position:
-        snake.length += 1
-        score += 10
-        food.randomize_position()
-        if score % 50 == 0:
-            level += 1
-            speed += 1
-    draw_grid(WINDOW)
-    draw_snake(WINDOW, snake)
-    draw_food(WINDOW, food)
-    pygame.display.set_caption(f'Snake  | Score: {score} | Level: {level}')
-
-#9.Определяем функцию для проверки столкновения со стеной:
-def check_collision_with_wall(snake):
-    return (snake.get_head_position()[0] in (0, GRID_WIDTH-1) or
-            snake.get_head_position()[1] in (0, GRID_HEIGHT-1))
+    def check_collision(self, food):
+        if self.points[0].x != food.x:
+            return False
+        if self.points[0].y != food.y:
+            return False
+        return True
 
 
-#10.Определяем функцию для проверки столкновения со змеей:
-def check_collision_with_self(snake):
-    return snake.get_head_position() in snake.positions[1:]
+def draw_grid():
+    for x in range(0, WIDTH, BLOCK_SIZE):
+        pygame.draw.line(SCREEN, WHITE, (x, 0), (x, HEIGHT), width=1)
+    for y in range(0, HEIGHT, BLOCK_SIZE):
+        pygame.draw.line(SCREEN, WHITE, (0, y), (WIDTH, y), width=1)
 
-#11.Определяем функцию для изменения скорости:
-def set_difficulty(level, speed):
-    if level == 1:
-        speed = 10
-    elif level == 2:
-        speed = 12
-    elif level == 3:
-        speed = 15
-    else:
-        speed = 20
-    return speed
 
-#12.Определяем функцию для запуска игры:
-def run_game():
-    global snake, food, score, level, speed
-    clock = pygame.time.Clock()
+def main():
+    running = True
     snake = Snake()
-    food = Food()
-    score = 0
+    food = Food(5, 5)
+    dx, dy = 0, 0
     level = 1
-    speed = 10
+    foods_eaten = 0
 
-    while True:
-        clock.tick(speed)
-        snake.turn(get_direction(snake.direction))
-        update()
-        speed = set_difficulty(level, speed)
-
-        if check_collision_with_wall(snake) or check_collision_with_self(snake):
-            pygame.time.delay(1000)
-            snake.reset()
-            score = 0
-            level = 1
-            speed = 10
+    while running:
+        SCREEN.fill(BLACK)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    dx, dy = 0, -1
+                elif event.key == pygame.K_DOWN:
+                    dx, dy = 0, +1
+                elif event.key == pygame.K_LEFT:
+                    dx, dy = -1, 0
+                elif event.key == pygame.K_RIGHT:
+                    dx, dy = +1, 0
 
-        pygame.display.update()
+        snake.move(dx, dy)
+        if snake.check_collision(food):
+            snake.points.append(Point(food.x, food.y))
+            food.location.x = random.randint(0, WIDTH // BLOCK_SIZE - 1)
+            food.location.y = random.randint(0, HEIGHT // BLOCK_SIZE - 1)
+            foods_eaten += 1
+            if foods_eaten == 4:
+                level += 1
+                foods_eaten = 0
+                clock.tick(5 - level)
 
-#13.Определяем функцию для получения направления движения:
-def get_direction(current_direction):
-    next_direction = current_direction
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                next_direction = UP
-            elif event.key == pygame.K_DOWN:
-                next_direction = DOWN
-            elif event.key == pygame.K_LEFT:
-                next_direction = LEFT
-            elif event.key == pygame.K_RIGHT:
-                next_direction = RIGHT
-    return next_direction
+        food.update()
+        snake.update()
+        draw_grid()
 
-#14.Вызываем функцию run_game() для запуска игры:
+        pygame.display.flip()
+        clock.tick(5 + level)
+
+
+
+
 if __name__ == '__main__':
-    run_game()
+    main()
