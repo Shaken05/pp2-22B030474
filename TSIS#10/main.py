@@ -1,7 +1,7 @@
 import psycopg2
 
 def create_table():
-    conn = psycopg2.connect(database = 'postgress', user = 'postgres', password = 'ayan2004')
+    conn = psycopg2.connect(database = 'postgres', user = 'postgres', password = 'faq234543')
     # database connection
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE phonebook (
